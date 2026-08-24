@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Email Organizer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">✉</span>
+        <span>AI Organizer</span>
+      </div>
+
+      <div class="user-info" id="user-info">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-details">
+          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-email" id="user-email"></div>
+        </div>
+      </div>
+
+      <!-- Inbox status -->
+      <div class="inbox-status" id="inbox-status">
+        <div class="inbox-status-text" id="inbox-status-text">Inbox not connected</div>
+        <button id="connect-btn" class="btn btn-primary btn-sm" style="width:100%; margin-top:0.5rem;">
+          Connect with Gmail
+        </button>
+        <button id="sync-btn" class="btn btn-outline btn-sm" style="width:100%; margin-top:0.4rem; display:none;">
+          🔄 Sync Inbox
+        </button>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-filter="all">
+          <span>📥</span> All Emails
+          <span class="badge" id="total-count">0</span>
+        </button>
+        <button class="nav-btn" data-filter="High">
+          <span>🔴</span> High Priority
+        </button>
+        <button class="nav-btn" data-filter="Work">
+          <span>💼</span> Work
+        </button>
+        <button class="nav-btn" data-filter="Personal">
+          <span>👤</span> Personal
+        </button>
+        <button class="nav-btn" data-filter="Finance">
+          <span>💰</span> Finance
+        </button>
+        <button class="nav-btn" data-filter="Marketing">
+          <span>📢</span> Marketing
+        </button>
+        <button class="nav-btn" data-filter="Support">
+          <span>🛠️</span> Support
+        </button>
+        <button class="nav-btn" data-filter="Spam">
+          <span>🚫</span> Spam
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="reorganize-btn" class="btn btn-outline btn-sm" style="width:100%; margin-bottom:0.5rem;">
+          🔄 Re-run AI Organize
+        </button>
+        <button id="logout-btn" class="btn btn-outline btn-sm" style="width:100%;">
+          Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+      <header class="header">
+        <h1 id="view-title">All Emails</h1>
+        <div class="header-actions">
+          <button id="add-email-btn" class="btn btn-outline">+ Paste Email</button>
+        </div>
+      </header>
+
+      <div class="stats-bar" id="stats-bar"></div>
+
+      <div class="email-list" id="email-list"></div>
+
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <p>No emails yet.</p>
+        <p style="font-size:0.9rem; margin-bottom:1rem;">Connect your real email inbox to fetch and organize your emails automatically.</p>
+        <button class="btn btn-primary" id="empty-connect-btn">Connect with Gmail</button>
+      </div>
+    </main>
+
+    <!-- Detail panel -->
+    <aside class="detail-panel" id="detail-panel">
+      <div class="detail-header">
+        <button class="close-detail" id="close-detail">✕</button>
+        <h2 id="detail-subject">Select an email</h2>
+      </div>
+      <div class="detail-meta" id="detail-meta"></div>
+      <div class="detail-section">
+        <h3>AI Summary</h3>
+        <p id="detail-summary" class="summary-box"></p>
+      </div>
+      <div class="detail-section">
+        <h3>Action Items</h3>
+        <ul id="detail-actions" class="action-list"></ul>
+      </div>
+      <div class="detail-section">
+        <h3>Full Body</h3>
+        <div id="detail-body" class="body-box"></div>
+      </div>
+      <div class="detail-actions-bar">
+        <select id="edit-category" class="select">
+          <option value="Work">Work</option>
+          <option value="Personal">Personal</option>
+          <option value="Finance">Finance</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Support">Support</option>
+          <option value="Travel">Travel</option>
+          <option value="Spam">Spam</option>
+          <option value="General">General</option>
+        </select>
+        <select id="edit-priority" class="select">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <button id="save-edit-btn" class="btn btn-sm btn-primary">Save</button>
+        <button id="delete-email-btn" class="btn btn-sm btn-danger">Delete</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modal: Connect Inbox -->
+  <div class="modal-overlay" id="connect-modal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <h2>Connect Your Email Inbox</h2>
+        <button class="close-modal" id="close-connect-modal">✕</button>
+      </div>
+      <form id="connect-form" style="padding:1.25rem 1.35rem 1.5rem;">
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.1rem;">
+          Enter your email credentials. For <strong>Gmail</strong> you must use an 
+          <a href="https://support.google.com/accounts/answer/185833" target="_blank" style="color:var(--primary);">App Password</a>
+          (not your normal password).
+        </p>
+
+        <div class="form-group">
+          <label>Email Provider</label>
+          <select id="provider" class="select" style="width:100%; padding:0.65rem;">
+            <option value="gmail">Gmail</option>
+            <option value="outlook">Outlook / Hotmail</option>
+            <option value="yahoo">Yahoo Mail</option>
+            <option value="icloud">iCloud</option>
+            <option value="zoho">Zoho</option>
+            <option value="custom">Custom IMAP</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="custom-host-group" style="display:none;">
+          <label>IMAP Host</label>
+          <input type="text" id="custom-host" placeholder="imap.example.com" />
+        </div>
+
+        <div class="form-group">
+          <label>Your Email Address</label>
+          <input type="email" id="imap-email" placeholder="you@gmail.com" required />
+        </div>
+
+        <div class="form-group">
+          <label>Password / App Password</label>
+          <input type="password" id="imap-password" placeholder="App Password for Gmail" required />
+        </div>
+
+        <div class="form-group">
+          <label>How many recent emails to fetch?</label>
+          <select id="fetch-limit" class="select" style="width:100%; padding:0.65rem;">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="30">30</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+
+        <div id="connect-error" class="auth-error" style="display:none; margin-bottom:1rem;"></div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" id="cancel-connect">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="do-connect-btn">Connect & Organize</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Paste Email (manual) -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Paste an Email Manually</h2>
+        <button class="close-modal" id="close-modal">✕</button>
+      </div>
+      <form id="email-form">
+        <div class="form-group">
+          <label for="sender">From</label>
+          <input type="text" id="sender" placeholder="sender@example.com" required />
+        </div>
+        <div class="form-group">
+          <label for="subject">Subject</label>
+          <input type="text" id="subject" placeholder="Email subject" required />
+        </div>
+        <div class="form-group">
+          <label for="body">Body</label>
+          <textarea id="body" rows="8" placeholder="Paste the full email body here..." required></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" id="cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Analyze & Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
