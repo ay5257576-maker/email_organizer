@@ -39,7 +39,10 @@ from googleapiclient.discovery import build
 from google.auth.transport.requests import Request as GoogleRequest
 
 # ---------- Config ----------
-SECRET_KEY = "final-year-ai-email-organizer-secret-key-change-in-prod-2026"
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY",
+    "final-year-ai-email-organizer-secret-key-change-in-prod-2026"
+)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
@@ -48,7 +51,10 @@ DATABASE_URL = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'email_organ
 
 # Gmail OAuth settings
 GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-GMAIL_REDIRECT_URI = "http://localhost:8000/auth/callback"
+GMAIL_REDIRECT_URI = os.environ.get(
+    "GMAIL_REDIRECT_URI",
+    "http://localhost:8000/auth/callback"
+)
 CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), "credentials.json")
 
 # Allow HTTP for local development (Google requires this flag for localhost)
@@ -281,16 +287,34 @@ def actions_from_str(s: str) -> List[str]:
 
 # ---------- Gmail API helpers ----------
 def create_gmail_flow(state: str = None) -> Flow:
-    if not os.path.exists(CREDENTIALS_FILE):
-        raise HTTPException(
-            status_code=500,
-            detail="credentials.json not found. Please download it from Google Cloud Console."
-        )
-    flow = Flow.from_client_secrets_file(
-        CREDENTIALS_FILE,
-        scopes=GMAIL_SCOPES,
-        redirect_uri=GMAIL_REDIRECT_URI,
-    )
+    if os.path.isfile(CREDENTIALS_FILE):
+        try:
+            flow = Flow.from_client_secrets_file(
+                CREDENTIALS_FILE,
+                scopes=GMAIL_SCOPES,
+                redirect_uri=GMAIL_REDIRECT_URI,
+            )
+        except Exception as exc:
+            raise RuntimeError(f"Unable to load Google credentials from {CREDENTIALS_FILE}: {exc}") from exc
+    else:
+        credentials_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+        if not credentials_json:
+            raise RuntimeError(
+                "Google credentials are unavailable: credentials.json was not found and "
+                "GOOGLE_CREDENTIALS_JSON is not set."
+            )
+        try:
+            client_config = json.loads(credentials_json)
+            if not isinstance(client_config, dict):
+                raise ValueError("the JSON value must be an object")
+            flow = Flow.from_client_config(
+                client_config,
+                scopes=GMAIL_SCOPES,
+                redirect_uri=GMAIL_REDIRECT_URI,
+            )
+        except Exception as exc:
+            raise RuntimeError(f"Unable to load Google credentials from GOOGLE_CREDENTIALS_JSON: {exc}") from exc
+
     if state:
         flow.state = state
     return flow
@@ -856,4 +880,5 @@ def login_page():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
